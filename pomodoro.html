@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Study Pomodoro Timer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(
+          circle at top,
+          #1f2937 0,
+          #020617 55%,
+          #000 100%
+        );
+        color: #e5e7eb;
+      }
+
+      .app {
+        width: 100%;
+        max-width: 520px;
+        padding: 24px 20px 28px;
+        border-radius: 24px;
+        background: rgba(15, 23, 42, 0.9);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .app-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+
+      .app-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .badge {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(96, 165, 250, 0.6);
+        color: #bfdbfe;
+        background: rgba(15, 23, 42, 0.6);
+      }
+
+      .phase-tabs {
+        display: flex;
+        gap: 8px;
+        padding: 4px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.9);
+        margin-bottom: 18px;
+      }
+
+      .phase-tab {
+        flex: 1;
+        text-align: center;
+        font-size: 0.8rem;
+        padding: 8px 0;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        background: transparent;
+        color: #9ca3af;
+        transition: background 0.18s, color 0.18s, transform 0.08s;
+      }
+
+      .phase-tab.active {
+        background: linear-gradient(135deg, #38bdf8, #6366f1);
+        color: #f9fafb;
+        font-weight: 600;
+        transform: translateY(-1px);
+      }
+
+      .timer-card {
+        border-radius: 20px;
+        padding: 20px 18px;
+        background: radial-gradient(circle at top, #0f172a, #020617);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        text-align: center;
+        margin-bottom: 18px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .timer-ring {
+        width: 210px;
+        height: 210px;
+        margin: 0 auto 10px;
+        border-radius: 50%;
+        border: 4px solid rgba(55, 65, 81, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      .timer-ring::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        border: 4px solid rgba(96, 165, 250, 0.3);
+        mask-image: conic-gradient(
+          from 0deg,
+          #000 0,
+          #000 70%,
+          transparent 70%,
+          transparent 100%
+        );
+        mask-size: 200%;
+        opacity: 0.4;
+      }
+
+      .timer-main {
+        font-size: 3rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+
+      .phase-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: #9ca3af;
+        margin-bottom: 6px;
+      }
+
+      .status-label {
+        font-size: 0.8rem;
+        color: #a5b4fc;
+        margin-top: 4px;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .btn {
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        padding: 9px 18px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        transition: transform 0.08s, box-shadow 0.08s, background 0.18s,
+          opacity 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btn:active {
+        transform: translateY(1px) scale(0.98);
+        box-shadow: none;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #38bdf8, #6366f1);
+        color: #f9fafb;
+        box-shadow: 0 6px 18px rgba(59, 130, 246, 0.6);
+      }
+
+      .btn-secondary {
+        background: rgba(30, 64, 175, 0.8);
+        color: #e5e7eb;
+        border: 1px solid rgba(129, 140, 248, 0.7);
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: #9ca3af;
+        border: 1px solid rgba(75, 85, 99, 0.8);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .settings {
+        margin-bottom: 16px;
+        border-radius: 16px;
+        padding: 12px 12px 10px;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(55, 65, 81, 0.8);
+      }
+
+      .settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+        color: #9ca3af;
+      }
+
+      .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        align-items: end;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .field label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #6b7280;
+      }
+
+      .field input[type="number"] {
+        width: 100%;
+        padding: 5px 6px;
+        border-radius: 999px;
+        border: 1px solid rgba(75, 85, 99, 0.9);
+        background: rgba(15, 23, 42, 0.9);
+        color: #e5e7eb;
+        font-size: 0.78rem;
+        text-align: center;
+        outline: none;
+      }
+
+      .field input[type="number"]:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.4);
+      }
+
+      .music-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        font-size: 0.8rem;
+        color: #9ca3af;
+        flex-wrap: wrap;
+      }
+
+      .music-row span {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #6b7280;
+      }
+
+      .music-row select {
+        flex: 1 1 130px;
+        padding: 5px 6px;
+        border-radius: 999px;
+        border: 1px solid rgba(75, 85, 99, 0.9);
+        background: rgba(15, 23, 42, 0.9);
+        color: #e5e7eb;
+        font-size: 0.78rem;
+        outline: none;
+      }
+
+      .music-row select:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.4);
+      }
+
+      .music-row input[type="range"] {
+        flex: 1 1 120px;
+      }
+
+      .preset-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+        margin-top: 4px;
+      }
+
+      .preset-btn {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        background: rgba(31, 41, 55, 0.9);
+        color: #9ca3af;
+        transition: background 0.15s, color 0.15s, transform 0.08s;
+      }
+
+      .preset-btn:hover {
+        background: rgba(37, 99, 235, 0.7);
+        color: #e5e7eb;
+        transform: translateY(-0.5px);
+      }
+
+      .stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: #9ca3af;
+        padding: 10px 4px 0;
+        border-top: 1px solid rgba(31, 41, 55, 0.9);
+        margin-top: 10px;
+      }
+
+      .stats span strong {
+        color: #e5e7eb;
+      }
+
+      .hint {
+        margin-top: 8px;
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-align: center;
+      }
+
+      @media (max-width: 480px) {
+        .app {
+          padding: 18px 14px 22px;
+          border-radius: 18px;
+        }
+
+        .timer-ring {
+          width: 180px;
+          height: 180px;
+        }
+
+        .timer-main {
+          font-size: 2.4rem;
+        }
+
+        .settings-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .app-title {
+          font-size: 1.1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <div>
+          <div class="app-title">Deep Study Pomodoro</div>
+          <div style="font-size: 0.8rem; color: #9ca3af; margin-top: 2px">
+            Focus hard, rest smart, repeat.
+          </div>
+        </div>
+        <span class="badge">Long-session mode</span>
+      </header>
+
+      <!-- Phase tabs -->
+      <div class="phase-tabs">
+        <button class="phase-tab active" data-phase="focus" type="button">
+          Focus
+        </button>
+        <button class="phase-tab" data-phase="short" type="button">
+          Short Break
+        </button>
+        <button class="phase-tab" data-phase="long" type="button">
+          Long Break
+        </button>
+      </div>
+
+      <!-- Timer card -->
+      <section class="timer-card">
+        <div class="phase-label" id="phase-label">Focus Session</div>
+        <div class="timer-ring">
+          <div class="timer-main" id="timer-display">50:00</div>
+        </div>
+        <div class="status-label" id="status-label">Ready to start</div>
+
+        <div class="controls">
+          <button class="btn btn-primary" id="start-btn" type="button">
+            ▶ Start
+          </button>
+          <button
+            class="btn btn-secondary"
+            id="pause-btn"
+            type="button"
+            disabled
+          >
+            ⏸ Pause
+          </button>
+          <button class="btn btn-ghost" id="reset-btn" type="button">
+            ⟲ Reset
+          </button>
+          <button class="btn btn-secondary" id="pip-btn" type="button">
+            📺 PiP
+          </button>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section class="settings">
+        <div class="settings-header">
+          <span>Session Settings (minutes)</span>
+          <button class="preset-btn" id="apply-btn" type="button">Apply</button>
+        </div>
+
+        <div class="settings-grid">
+          <div class="field">
+            <label for="focus-minutes">Focus</label>
+            <input
+              id="focus-minutes"
+              type="number"
+              min="1"
+              max="180"
+              value="50"
+            />
+          </div>
+          <div class="field">
+            <label for="short-minutes">Short Break</label>
+            <input
+              id="short-minutes"
+              type="number"
+              min="1"
+              max="60"
+              value="10"
+            />
+          </div>
+          <div class="field">
+            <label for="long-minutes">Long Break</label>
+            <input
+              id="long-minutes"
+              type="number"
+              min="5"
+              max="90"
+              value="25"
+            />
+          </div>
+          <div class="field">
+            <label for="cycles-before-long">Focus Cycles</label>
+            <input
+              id="cycles-before-long"
+              type="number"
+              min="1"
+              max="10"
+              value="3"
+            />
+          </div>
+        </div>
+
+        <div class="preset-buttons">
+          <button class="preset-btn" type="button" id="preset-25-5">
+            25 / 5
+          </button>
+          <button class="preset-btn" type="button" id="preset-50-10">
+            50 / 10
+          </button>
+        </div>
+
+        <!-- Enhanced audio controls -->
+        <div class="music-row">
+          <span>Ambient Sound</span>
+          <select id="sound-select">
+            <option value="lofi">Lo-fi café</option>
+            <option value="rain">Rain drops</option>
+            <option value="waves">Ocean waves</option>
+            <option value="brown">Brown noise</option>
+            <option value="white">White noise</option>
+            <option value="pink">Pink noise</option>
+            <option value="forest">Forest sounds</option>
+            <option value="fire">Crackling fire</option>
+            <option value="coffee">Coffee shop</option>
+          </select>
+          <button class="preset-btn" type="button" id="music-toggle">
+            Audio Off
+          </button>
+          <input id="volume-slider" type="range" min="0" max="100" value="30" />
+        </div>
+        <div class="music-row">
+          <span>Notifications</span>
+          <button class="preset-btn" type="button" id="notification-toggle">
+            Alerts On
+          </button>
+          <span style="font-size: 0.7rem">Phase transition sounds</span>
+        </div>
+      </section>
+
+      <!-- Stats -->
+      <section class="stats">
+        <span>Focus sessions: <strong id="sessions-count">0</strong></span>
+        <span>Focus time: <strong id="focus-time">0 min</strong></span>
+      </section>
+
+      <div class="hint">
+        Tip: Before each focus block, quickly jot down exactly what you’ll
+        study. That makes Pomodoro much more powerful.
+      </div>
+    </div>
+
+    <!-- Hidden elements for Picture-in-Picture (no URL source, only canvas stream) -->
+    <canvas
+      id="pip-canvas"
+      width="300"
+      height="180"
+      style="display: none"
+    ></canvas>
+    <video id="pip-video" muted playsinline style="display: none"></video>
+
+    <script>
+      // --- Timer State ---
+      let currentPhase = "focus"; // "focus" | "short" | "long"
+      let timerInterval = null;
+      let remainingSeconds = 50 * 60; // default 50 min focus
+      let isRunning = false;
+
+      let cyclesCompleted = 0; // number of completed focus sessions
+      let totalFocusSeconds = 0;
+      let cyclesBeforeLongBreak = 3;
+
+      // --- Elements ---
+      const phaseLabelEl = document.getElementById("phase-label");
+      const timerDisplayEl = document.getElementById("timer-display");
+      const statusLabelEl = document.getElementById("status-label");
+      const startBtn = document.getElementById("start-btn");
+      const pauseBtn = document.getElementById("pause-btn");
+      const resetBtn = document.getElementById("reset-btn");
+
+      const focusInput = document.getElementById("focus-minutes");
+      const shortInput = document.getElementById("short-minutes");
+      const longInput = document.getElementById("long-minutes");
+      const cyclesInput = document.getElementById("cycles-before-long");
+      const applyBtn = document.getElementById("apply-btn");
+
+      const sessionsCountEl = document.getElementById("sessions-count");
+      const focusTimeEl = document.getElementById("focus-time");
+
+      const preset25Btn = document.getElementById("preset-25-5");
+      const preset50Btn = document.getElementById("preset-50-10");
+      const phaseTabs = document.querySelectorAll(".phase-tab");
+
+      // --- Enhanced Audio state (Web Audio API) ---
+      const soundSelect = document.getElementById("sound-select");
+      const musicToggleBtn = document.getElementById("music-toggle");
+      const volumeSlider = document.getElementById("volume-slider");
+      const notificationToggleBtn = document.getElementById(
+        "notification-toggle"
+      );
+
+      let audioCtx = null;
+      let masterGain = null;
+      let noiseSource = null;
+      let filterNode = null;
+      let lfoOsc = null;
+      let lfoGain = null;
+      let secondaryOsc = null;
+      let reverbNode = null;
+      let delayNode = null;
+
+      let musicEnabled = false;
+      let notificationsEnabled = true;
+      let currentSoundPreset = "lofi";
+      let fadeInterval = null;
+
+      // --- Picture-in-Picture ---
+      const pipBtn = document.getElementById("pip-btn");
+      const pipCanvas = document.getElementById("pip-canvas");
+      const pipVideo = document.getElementById("pip-video");
+      const ctx = pipCanvas.getContext("2d");
+      const pipStream = pipCanvas.captureStream();
+      pipVideo.srcObject = pipStream;
+
+      // --- Helpers ---
+      function getSettings() {
+        const focusMin = Math.max(1, parseInt(focusInput.value || "1", 10));
+        const shortMin = Math.max(1, parseInt(shortInput.value || "1", 10));
+        const longMin = Math.max(5, parseInt(longInput.value || "5", 10));
+        const cycles = Math.max(1, parseInt(cyclesInput.value || "1", 10));
+        return {
+          focusMin,
+          shortMin,
+          longMin,
+          cycles,
+        };
+      }
+
+      function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        const mm = m.toString().padStart(2, "0");
+        const ss = s.toString().padStart(2, "0");
+        return mm + ":" + ss;
+      }
+
+      function updatePhaseLabel() {
+        if (currentPhase === "focus") {
+          phaseLabelEl.textContent = "Focus Session";
+        } else if (currentPhase === "short") {
+          phaseLabelEl.textContent = "Short Break";
+        } else {
+          phaseLabelEl.textContent = "Long Break";
+        }
+      }
+
+      function updatePhaseTabs() {
+        phaseTabs.forEach((tab) => {
+          if (tab.dataset.phase === currentPhase) {
+            tab.classList.add("active");
+          } else {
+            tab.classList.remove("active");
+          }
+        });
+      }
+
+      function updateTimerDisplay() {
+        timerDisplayEl.textContent = formatTime(remainingSeconds);
+        document.title =
+          formatTime(remainingSeconds) +
+          " • " +
+          (currentPhase === "focus"
+            ? "Focus"
+            : currentPhase === "short"
+            ? "Short Break"
+            : "Long Break");
+      }
+
+      function updateStatsDisplay() {
+        sessionsCountEl.textContent = cyclesCompleted.toString();
+        const totalMinutes = Math.round(totalFocusSeconds / 60);
+        focusTimeEl.textContent = totalMinutes + " min";
+      }
+
+      function setPhase(phase, resetTime = true) {
+        currentPhase = phase;
+        updatePhaseTabs();
+        updatePhaseLabel();
+        const { focusMin, shortMin, longMin } = getSettings();
+
+        if (resetTime) {
+          if (phase === "focus") {
+            remainingSeconds = focusMin * 60;
+          } else if (phase === "short") {
+            remainingSeconds = shortMin * 60;
+          } else {
+            remainingSeconds = longMin * 60;
+          }
+        }
+        updateTimerDisplay();
+        statusLabelEl.textContent = "Ready to start";
+      }
+
+      function clearTimerInterval() {
+        if (timerInterval != null) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+      }
+
+      // --- Web Audio helpers ---
+      function ensureAudioContext() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+        }
+      }
+
+      function stopSoundGraph() {
+        if (fadeInterval) {
+          clearInterval(fadeInterval);
+          fadeInterval = null;
+        }
+
+        if (noiseSource) {
+          try {
+            noiseSource.stop();
+          } catch (e) {}
+          noiseSource.disconnect();
+          noiseSource = null;
+        }
+        if (secondaryOsc) {
+          try {
+            secondaryOsc.stop();
+          } catch (e) {}
+          secondaryOsc.disconnect();
+          secondaryOsc = null;
+        }
+        if (lfoOsc) {
+          try {
+            lfoOsc.stop();
+          } catch (e) {}
+          lfoOsc.disconnect();
+          lfoOsc = null;
+        }
+        if (lfoGain) {
+          lfoGain.disconnect();
+          lfoGain = null;
+        }
+        if (filterNode) {
+          filterNode.disconnect();
+          filterNode = null;
+        }
+        if (reverbNode) {
+          reverbNode.disconnect();
+          reverbNode = null;
+        }
+        if (delayNode) {
+          delayNode.disconnect();
+          delayNode = null;
+        }
+        if (masterGain) {
+          masterGain.disconnect();
+          masterGain = null;
+        }
+      }
+
+      function buildNoiseBuffer(type = "white") {
+        const durationSec = 4;
+        const sampleRate = audioCtx.sampleRate;
+        const buffer = audioCtx.createBuffer(
+          2,
+          sampleRate * durationSec,
+          sampleRate
+        );
+
+        for (let channel = 0; channel < 2; channel++) {
+          const data = buffer.getChannelData(channel);
+
+          if (type === "white") {
+            for (let i = 0; i < data.length; i++) {
+              data[i] = Math.random() * 2 - 1;
+            }
+          } else if (type === "pink") {
+            let b0 = 0,
+              b1 = 0,
+              b2 = 0,
+              b3 = 0,
+              b4 = 0,
+              b5 = 0,
+              b6 = 0;
+            for (let i = 0; i < data.length; i++) {
+              const white = Math.random() * 2 - 1;
+              b0 = 0.99886 * b0 + white * 0.0555179;
+              b1 = 0.99332 * b1 + white * 0.0750759;
+              b2 = 0.969 * b2 + white * 0.153852;
+              b3 = 0.8665 * b3 + white * 0.3104856;
+              b4 = 0.55 * b4 + white * 0.5329522;
+              b5 = -0.7616 * b5 - white * 0.016898;
+              data[i] =
+                (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+              b6 = white * 0.115926;
+            }
+          } else if (type === "brown") {
+            let lastOut = 0;
+            for (let i = 0; i < data.length; i++) {
+              const white = Math.random() * 2 - 1;
+              data[i] = (lastOut + 0.02 * white) / 1.02;
+              lastOut = data[i];
+              data[i] *= 3.5;
+            }
+          }
+        }
+
+        return buffer;
+      }
+
+      function createReverbBuffer() {
+        const sampleRate = audioCtx.sampleRate;
+        const length = sampleRate * 2;
+        const buffer = audioCtx.createBuffer(2, length, sampleRate);
+
+        for (let channel = 0; channel < 2; channel++) {
+          const data = buffer.getChannelData(channel);
+          for (let i = 0; i < length; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+          }
+        }
+
+        return buffer;
+      }
+
+      function fadeAudioIn(gainNode, duration = 2000) {
+        if (!gainNode) return;
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(
+          (parseInt(volumeSlider.value, 10) / 100) * 0.6,
+          audioCtx.currentTime + duration / 1000
+        );
+      }
+
+      function fadeAudioOut(gainNode, duration = 1500) {
+        if (!gainNode) return;
+        gainNode.gain.linearRampToValueAtTime(
+          0,
+          audioCtx.currentTime + duration / 1000
+        );
+      }
+
+      function startSoundForPreset(preset) {
+        if (!musicEnabled || currentPhase !== "focus" || !isRunning) return;
+
+        ensureAudioContext();
+        audioCtx.resume().catch(() => {});
+
+        stopSoundGraph();
+
+        masterGain = audioCtx.createGain();
+
+        // Create reverb for ambient sounds
+        reverbNode = audioCtx.createConvolver();
+        reverbNode.buffer = createReverbBuffer();
+
+        // Create delay for some effects
+        delayNode = audioCtx.createDelay();
+        delayNode.delayTime.value = 0.3;
+
+        const delayGain = audioCtx.createGain();
+        delayGain.gain.value = 0.2;
+
+        // Configure sound based on preset
+        if (preset === "lofi") {
+          noiseSource = audioCtx.createBufferSource();
+          noiseSource.buffer = buildNoiseBuffer("pink");
+          noiseSource.loop = true;
+
+          filterNode = audioCtx.createBiquadFilter();
+          filterNode.type = "lowpass";
+          filterNode.frequency.value = 1200;
+          filterNode.Q.value = 0.7;
+
+          // Add subtle vinyl crackle
+          secondaryOsc = audioCtx.createBufferSource();
+          secondaryOsc.buffer = buildNoiseBuffer("white");
+          secondaryOsc.loop = true;
+
+          const crackleFilter = audioCtx.createBiquadFilter();
+          crackleFilter.type = "highpass";
+          crackleFilter.frequency.value = 8000;
+
+          const crackleGain = audioCtx.createGain();
+          crackleGain.gain.value = 0.05;
+
+          secondaryOsc.connect(crackleFilter);
+          crackleFilter.connect(crackleGain);
+          crackleGain.connect(masterGain);
+          secondaryOsc.start();
+
+          noiseSource.connect(filterNode);
+          filterNode.connect(reverbNode);
+          reverbNode.connect(masterGain);
+        } else if (preset === "rain") {
+          noiseSource = audioCtx.createBufferSource();
+          noiseSource.buffer = buildNoiseBuffer("white");
+          noiseSource.loop = true;
+
+          filterNode = audioCtx.createBiquadFilter();
+          filterNode.type = "bandpass";
+          filterNode.frequency.value = 4000;
+          filterNode.Q.value = 1.5;
+
+          // Add low frequency rumble for thunder effect
+          lfoOsc = audioCtx.createOscillator();
+          lfoOsc.frequency.value = 0.05;
+          lfoGain = audioCtx.createGain();
+          lfoGain.gain.value = 0.3;
+
+          lfoOsc.connect(lfoGain);
+          lfoGain.connect(filterNode.frequency);
+          lfoOsc.start();
+
+          noiseSource.connect(filterNode);
+          filterNode.connect(reverbNode);
+          reverbNode.connect(masterGain);
+        } else if (preset === "waves") {
+          noiseSource = audioCtx.createBufferSource();
+          noiseSource.buffer = buildNoiseBuffer("pink");
+          noiseSource.loop = true;
+
+          filterNode = audioCtx.createBiquadFilter();
+          filterNode.type = "lowpass";
+          filterNode.frequency.value = 800;
+          filterNode.Q.value = 0.7;
+
+          // Wave swell LFO
+          lfoOsc = audioCtx.createOscillator();
+          lfoGain = audioCtx.createGain();
+          lfoOsc.frequency.value = 0.08;
+          lfoGain.gain.value = 0.6;
+
+          lfoOsc.connect(lfoGain);
+          lfoGain.connect(masterGain.gain);
+          lfoOsc.start();
+
+          noiseSource.connect(filterNode);
+          filterNode.connect(delayNode);
+          delayNode.connect(delayGain);
+          delayGain.connect(masterGain);
+          filterNode.connect(masterGain);
+        } else if (
+          preset === "brown" ||
+          preset === "white" ||
+          preset === "pink"
+        ) {
+          noiseSource = audioCtx.createBufferSource();
+          noiseSource.buffer = buildNoiseBuffer(preset);
+          noiseSource.loop = true;
+
+          filterNode = audioCtx.createBiquadFilter();
+          filterNode.type = "lowpass";
+          filterNode.frequency.value =
+            preset === "brown" ? 400 : preset === "pink" ? 2000 : 8000;
+          filterNode.Q.value = 0.5;
+
+          noiseSource.connect(filterNode);
+          filterNode.connect(masterGain);
+        } else if (preset === "forest") {
+          noiseSource = audioCtx.createBufferSource();
+          noiseSource.buffer = buildNoiseBuffer("pink");
+          noiseSource.loop = true;
+
+          filterNode = audioCtx.createBiquadFilter();
+          filterNode.type = "bandpass";
+          filterNode.frequency.value = 2000;
+          filterNode.Q.value = 2.0;
+
+          // Bird chirp simulation
+          lfoOsc = audioCtx.createOscillator();
+          lfoOsc.frequency.value = 0.2;
+          lfoGain = audioCtx.createGain();
+          lfoGain.gain.value = 500;
+
+          lfoOsc.connect(lfoGain);
+          lfoGain.connect(filterNode.frequency);
+          lfoOsc.start();
+
+          noiseSource.connect(filterNode);
+          filterNode.connect(reverbNode);
+          reverbNode.connect(masterGain);
+        } else if (preset === "fire") {
+          noiseSource = audioCtx.createBufferSource();
+          noiseSource.buffer = buildNoiseBuffer("pink");
+          noiseSource.loop = true;
+
+          filterNode = audioCtx.createBiquadFilter();
+          filterNode.type = "lowpass";
+          filterNode.frequency.value = 1500;
+          filterNode.Q.value = 1.2;
+
+          // Crackling effect
+          lfoOsc = audioCtx.createOscillator();
+          lfoOsc.frequency.value = 15;
+          lfoGain = audioCtx.createGain();
+          lfoGain.gain.value = 0.3;
+
+          lfoOsc.connect(lfoGain);
+          lfoGain.connect(masterGain.gain);
+          lfoOsc.start();
+
+          noiseSource.connect(filterNode);
+          filterNode.connect(masterGain);
+        } else if (preset === "coffee") {
+          noiseSource = audioCtx.createBufferSource();
+          noiseSource.buffer = buildNoiseBuffer("pink");
+          noiseSource.loop = true;
+
+          filterNode = audioCtx.createBiquadFilter();
+          filterNode.type = "lowpass";
+          filterNode.frequency.value = 1000;
+          filterNode.Q.value = 0.8;
+
+          // Coffee shop chatter simulation
+          secondaryOsc = audioCtx.createBufferSource();
+          secondaryOsc.buffer = buildNoiseBuffer("white");
+          secondaryOsc.loop = true;
+
+          const chatterFilter = audioCtx.createBiquadFilter();
+          chatterFilter.type = "bandpass";
+          chatterFilter.frequency.value = 1500;
+          chatterFilter.Q.value = 3.0;
+
+          const chatterGain = audioCtx.createGain();
+          chatterGain.gain.value = 0.15;
+
+          secondaryOsc.connect(chatterFilter);
+          chatterFilter.connect(chatterGain);
+          chatterGain.connect(masterGain);
+          secondaryOsc.start();
+
+          noiseSource.connect(filterNode);
+          filterNode.connect(reverbNode);
+          reverbNode.connect(masterGain);
+        }
+
+        masterGain.connect(audioCtx.destination);
+        noiseSource.start();
+
+        // Fade in the audio
+        fadeAudioIn(masterGain);
+      }
+
+      function playNotificationSound(type = "transition") {
+        if (!notificationsEnabled) return;
+
+        ensureAudioContext();
+        audioCtx.resume().catch(() => {});
+
+        const notifGain = audioCtx.createGain();
+        notifGain.gain.value = 0.3;
+
+        if (type === "transition") {
+          // Pleasant bell-like sound for phase transitions
+          const osc1 = audioCtx.createOscillator();
+          const osc2 = audioCtx.createOscillator();
+          const osc3 = audioCtx.createOscillator();
+
+          osc1.frequency.value = 523.25; // C5
+          osc2.frequency.value = 659.25; // E5
+          osc3.frequency.value = 783.99; // G5
+
+          osc1.type = "sine";
+          osc2.type = "sine";
+          osc3.type = "sine";
+
+          const env = audioCtx.createGain();
+          env.gain.setValueAtTime(0, audioCtx.currentTime);
+          env.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.1);
+          env.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 2.5
+          );
+
+          osc1.connect(env);
+          osc2.connect(env);
+          osc3.connect(env);
+          env.connect(notifGain);
+          notifGain.connect(audioCtx.destination);
+
+          osc1.start();
+          osc2.start(audioCtx.currentTime + 0.1);
+          osc3.start(audioCtx.currentTime + 0.2);
+
+          osc1.stop(audioCtx.currentTime + 2.5);
+          osc2.stop(audioCtx.currentTime + 2.6);
+          osc3.stop(audioCtx.currentTime + 2.7);
+        } else if (type === "start") {
+          // Gentle rising tone for start
+          const osc = audioCtx.createOscillator();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+          osc.frequency.linearRampToValueAtTime(
+            440,
+            audioCtx.currentTime + 0.5
+          );
+
+          const env = audioCtx.createGain();
+          env.gain.setValueAtTime(0, audioCtx.currentTime);
+          env.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.1);
+          env.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 0.8
+          );
+
+          osc.connect(env);
+          env.connect(notifGain);
+          notifGain.connect(audioCtx.destination);
+
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.8);
+        }
+      }
+
+      function maybePlayMusic() {
+        if (!musicEnabled) {
+          fadeAudioOut(masterGain);
+          setTimeout(stopSoundGraph, 1500);
+          return;
+        }
+        if (currentPhase !== "focus" || !isRunning) {
+          fadeAudioOut(masterGain);
+          setTimeout(stopSoundGraph, 1500);
+          return;
+        }
+        startSoundForPreset(currentSoundPreset);
+      }
+
+      function stopMusic() {
+        if (masterGain) {
+          fadeAudioOut(masterGain);
+          setTimeout(stopSoundGraph, 1500);
+        } else {
+          stopSoundGraph();
+        }
+      }
+
+      // --- Timer control ---
+      function startTimer() {
+        if (isRunning) return;
+        if (remainingSeconds <= 0) {
+          setPhase(currentPhase, true);
+        }
+
+        isRunning = true;
+        startBtn.textContent = "▶ Resume";
+        pauseBtn.disabled = false;
+        statusLabelEl.textContent = "In progress... Stay focused.";
+
+        // Play start notification
+        playNotificationSound("start");
+
+        // Start ambient audio after a brief delay
+        setTimeout(() => {
+          maybePlayMusic();
+        }, 800);
+
+        timerInterval = setInterval(() => {
+          remainingSeconds -= 1;
+
+          if (remainingSeconds <= 0) {
+            remainingSeconds = 0;
+            updateTimerDisplay();
+            handlePhaseComplete();
+            return;
+          }
+
+          updateTimerDisplay();
+        }, 1000);
+      }
+
+      function pauseTimer() {
+        if (!isRunning) return;
+        isRunning = false;
+        clearTimerInterval();
+        statusLabelEl.textContent = "Paused";
+        pauseBtn.disabled = true;
+        stopMusic();
+      }
+
+      function resetTimer() {
+        pauseTimer();
+        cyclesCompleted = 0;
+        totalFocusSeconds = 0;
+        updateStatsDisplay();
+        const { focusMin } = getSettings();
+        remainingSeconds = focusMin * 60;
+        setPhase("focus", true);
+        statusLabelEl.textContent = "Ready to start";
+        startBtn.textContent = "▶ Start";
+        stopMusic();
+      }
+
+      function handlePhaseComplete() {
+        clearTimerInterval();
+        isRunning = false;
+        pauseBtn.disabled = true;
+        stopMusic();
+
+        // Play transition notification
+        playNotificationSound("transition");
+
+        if (currentPhase === "focus") {
+          cyclesCompleted += 1;
+          const { focusMin } = getSettings();
+          totalFocusSeconds += focusMin * 60;
+          updateStatsDisplay();
+
+          const settings = getSettings();
+          cyclesBeforeLongBreak = settings.cycles;
+
+          if (cyclesCompleted % cyclesBeforeLongBreak === 0) {
+            setPhase("long", true);
+            statusLabelEl.textContent = "Focus block done! Long break time.";
+          } else {
+            setPhase("short", true);
+            statusLabelEl.textContent = "Focus block done! Take a short break.";
+          }
+        } else {
+          setPhase("focus", true);
+          statusLabelEl.textContent =
+            "Break finished! Ready for the next focus block.";
+        }
+
+        startBtn.textContent = "▶ Start";
+
+        try {
+          console.log("Phase complete:", currentPhase);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // --- Picture-in-Picture drawing ---
+      function drawToPiP() {
+        ctx.clearRect(0, 0, pipCanvas.width, pipCanvas.height);
+
+        const gradient = ctx.createLinearGradient(
+          0,
+          0,
+          pipCanvas.width,
+          pipCanvas.height
+        );
+        gradient.addColorStop(0, "#0f172a");
+        gradient.addColorStop(1, "#020617");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, pipCanvas.width, pipCanvas.height);
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "20px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          currentPhase === "focus"
+            ? "FOCUS"
+            : currentPhase === "short"
+            ? "SHORT BREAK"
+            : "LONG BREAK",
+          pipCanvas.width / 2,
+          40
+        );
+
+        ctx.fillStyle = "#fafafa";
+        ctx.font = "bold 50px system-ui";
+        ctx.fillText(formatTime(remainingSeconds), pipCanvas.width / 2, 112);
+
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "12px system-ui";
+        ctx.fillText(
+          isRunning ? "Running" : "Paused",
+          pipCanvas.width / 2,
+          150
+        );
+      }
+
+      setInterval(drawToPiP, 500);
+
+      // --- Event Listeners ---
+      startBtn.addEventListener("click", () => {
+        startTimer();
+      });
+
+      pauseBtn.addEventListener("click", () => {
+        pauseTimer();
+      });
+
+      resetBtn.addEventListener("click", () => {
+        resetTimer();
+      });
+
+      applyBtn.addEventListener("click", () => {
+        const settings = getSettings();
+        focusInput.value = settings.focusMin;
+        shortInput.value = settings.shortMin;
+        longInput.value = settings.longMin;
+        cyclesInput.value = settings.cycles;
+
+        if (!isRunning) {
+          remainingSeconds = settings.focusMin * 60;
+          setPhase("focus", true);
+        }
+
+        statusLabelEl.textContent = "Settings applied.";
+      });
+
+      preset25Btn.addEventListener("click", () => {
+        focusInput.value = 25;
+        shortInput.value = 5;
+        longInput.value = 15;
+        cyclesInput.value = 4;
+        applyBtn.click();
+      });
+
+      preset50Btn.addEventListener("click", () => {
+        focusInput.value = 50;
+        shortInput.value = 10;
+        longInput.value = 25;
+        cyclesInput.value = 3;
+        applyBtn.click();
+      });
+
+      phaseTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const phase = tab.dataset.phase;
+          const wasRunning = isRunning;
+          pauseTimer();
+          setPhase(phase, true);
+          if (wasRunning) {
+            statusLabelEl.textContent = "Phase changed. Press Start to begin.";
+          }
+        });
+      });
+
+      // Volume control
+      volumeSlider.addEventListener("input", () => {
+        const baseVol = parseInt(volumeSlider.value, 10) / 100;
+        if (masterGain) {
+          masterGain.gain.value = baseVol * 0.6;
+        }
+        if (lfoGain && masterGain) {
+          lfoGain.gain.value = masterGain.gain.value * 0.4;
+        }
+      });
+
+      // Audio toggle
+      musicToggleBtn.addEventListener("click", () => {
+        musicEnabled = !musicEnabled;
+        musicToggleBtn.textContent = musicEnabled ? "Audio On" : "Audio Off";
+        if (!musicEnabled) {
+          stopMusic();
+        } else if (isRunning && currentPhase === "focus") {
+          maybePlayMusic();
+        }
+      });
+
+      // Notification toggle
+      notificationToggleBtn.addEventListener("click", () => {
+        notificationsEnabled = !notificationsEnabled;
+        notificationToggleBtn.textContent = notificationsEnabled
+          ? "Alerts On"
+          : "Alerts Off";
+      });
+
+      // Sound preset selection
+      soundSelect.addEventListener("change", () => {
+        currentSoundPreset = soundSelect.value;
+        if (musicEnabled && isRunning && currentPhase === "focus") {
+          // Restart with new preset
+          stopSoundGraph();
+          setTimeout(() => {
+            maybePlayMusic();
+          }, 100);
+        }
+      });
+
+      // Picture-in-Picture button
+      pipBtn.addEventListener("click", async () => {
+        try {
+          await pipVideo.play();
+          await pipVideo.requestPictureInPicture();
+        } catch (e) {
+          console.error("PiP Error:", e);
+        }
+      });
+
+      // --- Initial setup ---
+      setPhase("focus", true);
+      updateStatsDisplay();
+    </script>
+  </body>
+</html>
